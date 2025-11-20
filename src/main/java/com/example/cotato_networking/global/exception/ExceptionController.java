@@ -1,10 +1,13 @@
 package com.example.cotato_networking.global.exception;
 
 import com.example.cotato_networking.global.dto.ErrorResponse;
+import com.example.cotato_networking.global.exception.auth.AuthErrorCode;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,4 +61,18 @@ public class ExceptionController {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorResponse);
     }
-}
+
+    // 비밀번호 불일치
+    @ExceptionHandler(BadCredentialsException.class)
+        public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException e, HttpServletRequest request){
+
+        ErrorResponse errorResponse = ErrorResponse.of(AuthErrorCode.UNAUTHORIZED, request);
+
+        return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(errorResponse);
+
+        }
+
+    }
+
