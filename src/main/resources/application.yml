@@ -12,3 +12,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+# OpenWeather API 설정 추가
+openweather:
+  api:
+    key: ${OPENWEATHER_API_KEY}
