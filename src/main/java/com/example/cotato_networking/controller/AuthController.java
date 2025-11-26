@@ -54,7 +54,7 @@ public class AuthController {
                 securityContext
         );
 
-        LoginResponse response = new LoginResponse(user.getId());
+        LoginResponse response = new LoginResponse(user.getId(), user.getLoginId());
 
         return ResponseEntity.ok(DataResponse.from(response));
     }
