@@ -12,6 +12,8 @@ public class DailyForecastResponse {
     private String dayOfWeek;
     private Integer minTemp;
     private Integer maxTemp;
+    private String morningWeatherMain;
+    private String afternoonWeatherMain;
     private Integer morningRainChance;
     private Integer afternoonRainChance;
 }
