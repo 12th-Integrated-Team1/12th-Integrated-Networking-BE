@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class HourlyForecastResponse {
     private String time;
     private Integer temperature;
+    private String weatherMain;
 }

@@ -14,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -108,7 +110,8 @@ public class WeatherService {
             JsonNode item = list.get(i);
             hourlyList.add(new HourlyForecastResponse(
                     dateFormatter.formatHour(item.get("dt").asLong()),
-                    (int) Math.round(item.get("main").get("temp").asDouble())
+                    (int) Math.round(item.get("main").get("temp").asDouble()),
+                    item.get("weather").get(0).get("description").asText()
             ));
         }
 
@@ -156,8 +159,43 @@ public class WeatherService {
                 dateFormatter.formatDayOfWeek(dateKey, dayIndex),
                 dataCalculator.calculateMinTemp(dayData),
                 dataCalculator.calculateMaxTemp(dayData),
+                getMorningWeather(dayData),
+                getAfternoonWeather(dayData),
                 dataCalculator.calculateRainChance(dayData, 0, 12),
                 dataCalculator.calculateRainChance(dayData, 12, 24)
         );
+    }
+
+
+    private String getMorningWeather(List<JsonNode> dayData) {
+        return dayData.stream()
+                .filter(node -> {
+                    long timestamp = node.get("dt").asLong();
+                    LocalDateTime dt = LocalDateTime.ofInstant(
+                            Instant.ofEpochSecond(timestamp),
+                            ZoneId.of("Asia/Seoul")
+                    );
+                    int hour = dt.getHour();
+                    return hour >= 6 && hour < 12;  // 오전 6시~12시
+                })
+                .findFirst()
+                .map(node -> node.get("weather").get(0).get("description").asText())
+                .orElse("맑음");
+    }
+
+    private String getAfternoonWeather(List<JsonNode> dayData) {
+        return dayData.stream()
+                .filter(node -> {
+                    long timestamp = node.get("dt").asLong();
+                    LocalDateTime dt = LocalDateTime.ofInstant(
+                            Instant.ofEpochSecond(timestamp),
+                            ZoneId.of("Asia/Seoul")
+                    );
+                    int hour = dt.getHour();
+                    return hour >= 12 && hour < 18;  // 오후 12시~18시
+                })
+                .findFirst()
+                .map(node -> node.get("weather").get(0).get("description").asText())
+                .orElse("맑음");
     }
 }
