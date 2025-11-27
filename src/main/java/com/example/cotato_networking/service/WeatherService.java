@@ -9,6 +9,7 @@ import com.example.cotato_networking.global.exception.location.LocationErrorCode
 import com.example.cotato_networking.repository.LocationRepository;
 import com.example.cotato_networking.service.util.WeatherDataCalculator;
 import com.example.cotato_networking.service.util.WeatherDateFormatter;
+import com.example.cotato_networking.service.util.WeatherTranslator;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class WeatherService {
     private final OpenWeatherMapService openWeatherMapService;
     private final WeatherDateFormatter dateFormatter;
     private final WeatherDataCalculator dataCalculator;
+    private final WeatherTranslator weatherTranslator;
 
     // 현재 날씨 조회
     public CurrentWeatherResponse getCurrentWeather(Long locationId) {
@@ -73,8 +75,8 @@ public class WeatherService {
         return buildDailyForecastList(dailyMap);
     }
 
+   // 헬퍼 메서드
 
-    // helpers
     private Location findLocationById(Long locationId) {
         return locationRepository.findById(locationId)
                 .orElseThrow(() -> new AppException(LocationErrorCode.NOT_FOUND));
@@ -86,11 +88,13 @@ public class WeatherService {
             JsonNode airPollution,
             JsonNode uvIndex
     ) {
+        String rawWeather = currentWeather.get("weather").get(0).get("description").asText();
+
         return new CurrentWeatherResponse(
                 location.getLocationName(),
                 dateFormatter.formatDate(LocalDateTime.now()),
                 currentWeather.get("main").get("temp").asDouble(),
-                currentWeather.get("weather").get(0).get("description").asText(),
+                weatherTranslator.translateToSimple(rawWeather),
                 currentWeather.get("main").get("feels_like").asDouble(),
                 currentWeather.get("main").get("humidity").asInt(),
                 currentWeather.get("wind").get("speed").asDouble(),
@@ -108,10 +112,12 @@ public class WeatherService {
         int count = Math.min(12, list.size());
         for (int i = 0; i < count; i++) {
             JsonNode item = list.get(i);
+            String rawWeather = item.get("weather").get(0).get("description").asText();
+
             hourlyList.add(new HourlyForecastResponse(
                     dateFormatter.formatHour(item.get("dt").asLong()),
                     (int) Math.round(item.get("main").get("temp").asDouble()),
-                    item.get("weather").get(0).get("description").asText()
+                    weatherTranslator.translateToSimple(rawWeather)
             ));
         }
 
@@ -166,7 +172,6 @@ public class WeatherService {
         );
     }
 
-
     private String getMorningWeather(List<JsonNode> dayData) {
         return dayData.stream()
                 .filter(node -> {
@@ -176,10 +181,13 @@ public class WeatherService {
                             ZoneId.of("Asia/Seoul")
                     );
                     int hour = dt.getHour();
-                    return hour >= 6 && hour < 12;  // 오전 6시~12시
+                    return hour >= 6 && hour < 12;
                 })
                 .findFirst()
-                .map(node -> node.get("weather").get(0).get("description").asText())
+                .map(node -> {
+                    String rawWeather = node.get("weather").get(0).get("description").asText();
+                    return weatherTranslator.translateToSimple(rawWeather);
+                })
                 .orElse("맑음");
     }
 
@@ -192,10 +200,13 @@ public class WeatherService {
                             ZoneId.of("Asia/Seoul")
                     );
                     int hour = dt.getHour();
-                    return hour >= 12 && hour < 18;  // 오후 12시~18시
+                    return hour >= 12 && hour < 18;
                 })
                 .findFirst()
-                .map(node -> node.get("weather").get(0).get("description").asText())
+                .map(node -> {
+                    String rawWeather = node.get("weather").get(0).get("description").asText();
+                    return weatherTranslator.translateToSimple(rawWeather);
+                })
                 .orElse("맑음");
     }
 }
